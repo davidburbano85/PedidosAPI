@@ -1,6 +1,6 @@
 ﻿
 using AutoMapper;
-using Pedidos_API.Models;
+using Pedidos_API.Infrastructura.Models;
 using Pedidos_API.Models.DTO;
 
 namespace Pedidos_API
@@ -9,9 +9,9 @@ namespace Pedidos_API
     {
         public  MappingConfig()
         {
-            CreateMap< Pedidoss, PedidosDto >().ReverseMap();
+            CreateMap< Pedidos, PedidosDto >().ReverseMap();
 
-            CreateMap<Pedidoss, CrearPedidosDTO>().ReverseMap();
+            CreateMap<Pedidos, CrearPedidosDTO>().ReverseMap();
         }
     }
 }

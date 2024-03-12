@@ -2,8 +2,9 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Pedidos_API.Models;
-using Pedidos_API.Repositorio.IRepositorio;
 using Pedidos_API.Models.DTO;
+using Pedidos_API.Infrastructura.Models;
+using Pedidos_API.Infrastructura.ContractsOInterfaces;
 
 namespace Pedidos_API.Controllers
 {
@@ -31,7 +32,7 @@ namespace Pedidos_API.Controllers
             try
             {
                 _logger.LogInformation("Obtener info de Pedidos");
-                IEnumerable<Pedidoss> pedidosList = await _pedidoRepositorio.ObtenerTodos();
+                IEnumerable<Pedidos> pedidosList = await _pedidoRepositorio.ObtenerTodos();
 
                 _response.Resultado = _mapper.Map<IEnumerable<PedidosDto>>(pedidosList);
                 return Ok(_response);
@@ -92,7 +93,8 @@ namespace Pedidos_API.Controllers
                     ModelState.AddModelError("NombreExistente", "ese producto ya existe");
                     return BadRequest(ModelState);
                 }
-                Pedidoss pedi=_mapper.Map<Pedidoss>(crearDto);
+                Pedidos pedi=_mapper.Map<Pedidos>(crearDto);
+                pedi.FechadeLlegada=DateTime.Now;
 
                 await _pedidoRepositorio.Crear(pedi);
                 _response.Resultado= pedi;
@@ -105,6 +107,43 @@ namespace Pedidos_API.Controllers
                 _response.ErrorMessages = new List<string>() { ex.ToString() };
                 return StatusCode(500, ex.Message);
             }
+        }
+
+        [HttpDelete ("{id:int}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        
+        public async Task<IActionResult> DeletePedido(int id)
+        {
+            if (id == 0)
+            {
+                return BadRequest();
+            }
+            var pedido = await _pedidoRepositorio.Obtener(v => v.Id == id);
+            if (pedido == null)
+            {
+                return NotFound();
+            }
+            _pedidoRepositorio.Remover(pedido);
+
+            return NoContent();
+
+        }
+        [HttpPut]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+
+
+        public async Task<IActionResult> UpdatePedido(int id, PedidosDto pedidoDto)
+        {
+            if (pedidoDto == null || id != pedidoDto.Id)
+            {
+                return BadRequest();
+            }
+            Pedidos actual = _mapper.Map<Pedidos>(pedidoDto);
+            _pedidoRepositorio.Modify(actual);
+            return NoContent();
         }
 
 

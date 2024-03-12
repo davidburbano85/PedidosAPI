@@ -8,7 +8,7 @@ namespace Pedidos_API.Models.DTO
         [MaxLength(100)]
         [Key] 
 
-        public string Nombre { get; set;}
+        public  string? Nombre { get; set;}
 
         public int Cantidad { get; set; }
 
