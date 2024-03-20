@@ -15,7 +15,13 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddAutoMapper(typeof(MappingConfig));
+
 builder.Services.AddScoped<IPedidoRepositorio, PedidoRepositorio>();
+builder.Services.AddScoped<IConsumoRepositorio, ConsumoRepositorio>();
+builder.Services.AddScoped<IPasswordRepositorio, PasswordRepositorio>();
+builder.Services.AddScoped<ICancionesRepositorio, CancionesRepositorio>();
+
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));

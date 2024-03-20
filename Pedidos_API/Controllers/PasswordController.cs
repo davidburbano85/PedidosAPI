@@ -1,41 +1,42 @@
 ﻿using AutoMapper;
-using Microsoft.AspNetCore.Http;
+
 using Microsoft.AspNetCore.Mvc;
+
+
+using Pedidos_API.Infrastructura.ContractsOInterfaces;
 using Pedidos_API.Models;
 using Pedidos_API.Models.DTO;
-using Pedidos_API.Infrastructura.Models;
-using Pedidos_API.Infrastructura.ContractsOInterfaces;
-using System.Net;
+using Pedidos_API.Infrastructura.ModelsPOCO;
 
-namespace Pedidos_API.Controllers
+namespace Password_API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class PedidoController : ControllerBase
+    public class PasswordController : ControllerBase
     {
-        private readonly ILogger<PedidoController> _logger;
+        private readonly ILogger<PasswordController> _logger;
         private readonly IMapper _mapper;
-        private readonly IPedidoRepositorio _pedidoRepositorio;
+        private readonly IPasswordRepositorio _PasswordRepositorio;
         protected ApiResponse _response;
 
-        public PedidoController(ILogger<PedidoController> logger, IPedidoRepositorio pedidoRepositorio, IMapper mapper)
+        public PasswordController(ILogger<PasswordController> logger, IPasswordRepositorio PasswordRepositorio, IMapper mapper)
         {
             _mapper = mapper;
             _logger = logger;
-            _pedidoRepositorio = pedidoRepositorio;
+            _PasswordRepositorio = PasswordRepositorio;
             _response = new();
         }
 
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<ActionResult<ApiResponse>> GetPedidos()
+        public async Task<ActionResult<ApiResponse>> GetPasswords()
         {
             try
             {
-                _logger.LogInformation("Obtener info de Pedidos");
-                IEnumerable<Pedidos> pedidosList = await _pedidoRepositorio.ObtenerTodos();
+                _logger.LogInformation("Obtener info de Passwords");
+                IEnumerable<Password> PasswordsList = await _PasswordRepositorio.ObtenerTodos();
 
-                _response.Resultado = _mapper.Map<IEnumerable<PedidosDto>>(pedidosList);
+                _response.Resultado = _mapper.Map<IEnumerable<PasswordDto>>(PasswordsList);
                 return Ok(_response);
 
             }
@@ -48,12 +49,12 @@ namespace Pedidos_API.Controllers
             return _response;
         }
 
-        [HttpGet("GetPedidos")]
+        [HttpGet("GetPasswords")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
 
-        public async Task<ActionResult<ApiResponse>> GetPedidos(int id)
+        public async Task<ActionResult<ApiResponse>> GetPasswords(int id)
         {
             try
             {
@@ -63,14 +64,14 @@ namespace Pedidos_API.Controllers
                     _response.IsExitoso = false;
                     return BadRequest(_response);
                 }
-                var pedido = await _pedidoRepositorio.Obtener(v => v.Id == id);
+                var Password = await _PasswordRepositorio.Obtener(v => v.IdPass == id);
 
-                if (pedido == null)
+                if (Password == null)
                 {
                     _response.IsExitoso = false;
                     return NotFound(_response);
                 }
-                _response.Resultado = _mapper.Map<PedidosDto>(pedido);
+                _response.Resultado = _mapper.Map<PasswordDto>(Password);
                 return Ok(_response);
             }
             catch (Exception ex)
@@ -81,9 +82,8 @@ namespace Pedidos_API.Controllers
             }
             return _response;
         }
-        
         [HttpPost]
-        public async Task<IActionResult> CrearPedido(CrearPedidosDTO crearDto)
+        public async Task<IActionResult> CrearPassword(CrearPasswordDTO crearDto)
         {
             try
             {
@@ -91,17 +91,17 @@ namespace Pedidos_API.Controllers
                 {
                     return BadRequest(ModelState);
                 }
-                var res = await _pedidoRepositorio.Obtener(v => v.Nombre.ToLower() == crearDto.Nombre.ToLower());
+                var res = await _PasswordRepositorio.Obtener(v => v.Nombre.ToLower() == crearDto.Nombre.ToLower());
                 if (res != null)
                 {
                     ModelState.AddModelError("NombreExistente", "ese producto ya existe");
                     return BadRequest(ModelState);
                 }
-                Pedidos pedi=_mapper.Map<Pedidos>(crearDto);
-                pedi.FechadeLlegada=DateTime.Now;
+                Password pas=_mapper.Map<Password>(crearDto);
+                pas.Pass="";
 
-                await _pedidoRepositorio.Crear(pedi);
-                _response.Resultado= pedi;
+                await _PasswordRepositorio.Crear(pas);
+                _response.Resultado= pas;
                 return Ok(_response);
             }
             catch (Exception ex)
@@ -118,7 +118,7 @@ namespace Pedidos_API.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         
-        public async Task<IActionResult> DeletePedido(int id)
+        public async Task<IActionResult> DeletePassword(int id)
         {
             if (id == 0)
             {
@@ -126,12 +126,12 @@ namespace Pedidos_API.Controllers
                 //_response.statusCode=HttpStatusCode.BadRequest;
                 return BadRequest(_response);
             }
-            var pedido = await _pedidoRepositorio.Obtener(v => v.Id == id);
-            if (pedido == null)
+            var Password = await _PasswordRepositorio.Obtener(v => v.IdPass == id);
+            if (Password == null)
             {
                 return NotFound();
             }
-            await _pedidoRepositorio.Remover(pedido);
+            await _PasswordRepositorio.Remover(Password);
 
             return NoContent();
 
@@ -141,14 +141,14 @@ namespace Pedidos_API.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
 
 
-        public async Task<IActionResult> UpdatePedido(int id, PedidosDto pedidoDto)
+        public async Task<IActionResult> UpdatePassword(int id, PasswordDto PasswordDto)
         {
-            if (pedidoDto == null || id != pedidoDto.Id)
+            if (PasswordDto == null || id != PasswordDto.IdPass)
             {
                 return BadRequest();
             }
-            Pedidos actual = _mapper.Map<Pedidos>(pedidoDto);
-            await _pedidoRepositorio.Modify(actual);
+            Password actual = _mapper.Map<Password>(PasswordDto);
+            await _PasswordRepositorio.Modify(actual);
             return NoContent();
         }
 

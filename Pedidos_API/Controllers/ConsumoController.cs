@@ -1,41 +1,40 @@
 ﻿using AutoMapper;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Pedidos_API.Infrastructura.ContractsOInterfaces;
+using Pedidos_API.Infrastructura.ModelsPOCO;
 using Pedidos_API.Models;
 using Pedidos_API.Models.DTO;
-using Pedidos_API.Infrastructura.Models;
-using Pedidos_API.Infrastructura.ContractsOInterfaces;
 using System.Net;
 
-namespace Pedidos_API.Controllers
+namespace Consumos_API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class PedidoController : ControllerBase
+    public class ConsumoController : ControllerBase
     {
-        private readonly ILogger<PedidoController> _logger;
+        private readonly ILogger<ConsumoController> _logger;
         private readonly IMapper _mapper;
-        private readonly IPedidoRepositorio _pedidoRepositorio;
+        private readonly IConsumoRepositorio _ConsumoRepositorio;
         protected ApiResponse _response;
 
-        public PedidoController(ILogger<PedidoController> logger, IPedidoRepositorio pedidoRepositorio, IMapper mapper)
+        public ConsumoController(ILogger<ConsumoController> logger, IConsumoRepositorio ConsumoRepositorio, IMapper mapper)
         {
             _mapper = mapper;
             _logger = logger;
-            _pedidoRepositorio = pedidoRepositorio;
+            _ConsumoRepositorio = ConsumoRepositorio;
             _response = new();
         }
 
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<ActionResult<ApiResponse>> GetPedidos()
+        public async Task<ActionResult<ApiResponse>> GetConsumos()
         {
             try
             {
-                _logger.LogInformation("Obtener info de Pedidos");
-                IEnumerable<Pedidos> pedidosList = await _pedidoRepositorio.ObtenerTodos();
+                _logger.LogInformation("Obtener info de Consumos");
+                IEnumerable<Consumo> ConsumosList = await _ConsumoRepositorio.ObtenerTodos();
 
-                _response.Resultado = _mapper.Map<IEnumerable<PedidosDto>>(pedidosList);
+                _response.Resultado = _mapper.Map<IEnumerable<ConsumoDto>>(ConsumosList);
                 return Ok(_response);
 
             }
@@ -48,12 +47,12 @@ namespace Pedidos_API.Controllers
             return _response;
         }
 
-        [HttpGet("GetPedidos")]
+        [HttpGet("GetConsumos")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
 
-        public async Task<ActionResult<ApiResponse>> GetPedidos(int id)
+        public async Task<ActionResult<ApiResponse>> GetConsumos(int id)
         {
             try
             {
@@ -63,14 +62,14 @@ namespace Pedidos_API.Controllers
                     _response.IsExitoso = false;
                     return BadRequest(_response);
                 }
-                var pedido = await _pedidoRepositorio.Obtener(v => v.Id == id);
+                var Consumo = await _ConsumoRepositorio.Obtener(v => v.Id == id);
 
-                if (pedido == null)
+                if (Consumo == null)
                 {
                     _response.IsExitoso = false;
                     return NotFound(_response);
                 }
-                _response.Resultado = _mapper.Map<PedidosDto>(pedido);
+                _response.Resultado = _mapper.Map<ConsumoDto>(Consumo);
                 return Ok(_response);
             }
             catch (Exception ex)
@@ -81,9 +80,11 @@ namespace Pedidos_API.Controllers
             }
             return _response;
         }
-        
         [HttpPost]
-        public async Task<IActionResult> CrearPedido(CrearPedidosDTO crearDto)
+
+
+
+        public async Task<IActionResult> CrearConsumo(CrearConsumoDTO crearDto)
         {
             try
             {
@@ -91,17 +92,17 @@ namespace Pedidos_API.Controllers
                 {
                     return BadRequest(ModelState);
                 }
-                var res = await _pedidoRepositorio.Obtener(v => v.Nombre.ToLower() == crearDto.Nombre.ToLower());
+                var res = await _ConsumoRepositorio.Obtener(v => v.Mesa.ToLower() == crearDto.Mesa.ToLower());
                 if (res != null)
                 {
                     ModelState.AddModelError("NombreExistente", "ese producto ya existe");
                     return BadRequest(ModelState);
                 }
-                Pedidos pedi=_mapper.Map<Pedidos>(crearDto);
-                pedi.FechadeLlegada=DateTime.Now;
+                Consumo consu=_mapper.Map<Consumo>(crearDto);
+                consu.Cantidad = consu.Cantidad;
 
-                await _pedidoRepositorio.Crear(pedi);
-                _response.Resultado= pedi;
+                await _ConsumoRepositorio.Crear(consu);
+                _response.Resultado= consu;
                 return Ok(_response);
             }
             catch (Exception ex)
@@ -118,20 +119,20 @@ namespace Pedidos_API.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         
-        public async Task<IActionResult> DeletePedido(int id)
+        public async Task<IActionResult> DeleteConsumo(int id)
         {
             if (id == 0)
             {
-                //_response.IsExitoso=false;
-                //_response.statusCode=HttpStatusCode.BadRequest;
+                _response.IsExitoso = false;
+                _response.statusCode = HttpStatusCode.BadRequest;
                 return BadRequest(_response);
             }
-            var pedido = await _pedidoRepositorio.Obtener(v => v.Id == id);
-            if (pedido == null)
+            var Consumo = await _ConsumoRepositorio.Obtener(v => v.Id == id);
+            if (Consumo == null)
             {
                 return NotFound();
             }
-            await _pedidoRepositorio.Remover(pedido);
+            await _ConsumoRepositorio.Remover(Consumo);
 
             return NoContent();
 
@@ -141,14 +142,14 @@ namespace Pedidos_API.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
 
 
-        public async Task<IActionResult> UpdatePedido(int id, PedidosDto pedidoDto)
+        public async Task<IActionResult> UpdateConsumo(int id, ConsumoDto ConsumoDto)
         {
-            if (pedidoDto == null || id != pedidoDto.Id)
+            if (ConsumoDto == null || id != ConsumoDto.Id)
             {
                 return BadRequest();
             }
-            Pedidos actual = _mapper.Map<Pedidos>(pedidoDto);
-            await _pedidoRepositorio.Modify(actual);
+            Consumo actual = _mapper.Map<Consumo>(ConsumoDto);
+            await _ConsumoRepositorio.Modify(actual);
             return NoContent();
         }
 

@@ -1,41 +1,43 @@
 ﻿using AutoMapper;
-using Microsoft.AspNetCore.Http;
+
 using Microsoft.AspNetCore.Mvc;
+
+
+using Pedidos_API.Infrastructura.ContractsOInterfaces;
 using Pedidos_API.Models;
 using Pedidos_API.Models.DTO;
-using Pedidos_API.Infrastructura.Models;
-using Pedidos_API.Infrastructura.ContractsOInterfaces;
+using Pedidos_API.Infrastructura.ModelsPOCO;
 using System.Net;
 
-namespace Pedidos_API.Controllers
+namespace Canciones_API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class PedidoController : ControllerBase
+    public class CancionesController : ControllerBase
     {
-        private readonly ILogger<PedidoController> _logger;
+        private readonly ILogger<CancionesController> _logger;
         private readonly IMapper _mapper;
-        private readonly IPedidoRepositorio _pedidoRepositorio;
+        private readonly ICancionesRepositorio _CancionesRepositorio;
         protected ApiResponse _response;
 
-        public PedidoController(ILogger<PedidoController> logger, IPedidoRepositorio pedidoRepositorio, IMapper mapper)
+        public CancionesController(ILogger<CancionesController> logger, ICancionesRepositorio CancionesRepositorio, IMapper mapper)
         {
             _mapper = mapper;
             _logger = logger;
-            _pedidoRepositorio = pedidoRepositorio;
+            _CancionesRepositorio = CancionesRepositorio;
             _response = new();
         }
 
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<ActionResult<ApiResponse>> GetPedidos()
+        public async Task<ActionResult<ApiResponse>> GetCancioness()
         {
             try
             {
-                _logger.LogInformation("Obtener info de Pedidos");
-                IEnumerable<Pedidos> pedidosList = await _pedidoRepositorio.ObtenerTodos();
+                _logger.LogInformation("Obtener info de Cancioness");
+                IEnumerable<Canciones> CancionessList = await _CancionesRepositorio.ObtenerTodos();
 
-                _response.Resultado = _mapper.Map<IEnumerable<PedidosDto>>(pedidosList);
+                _response.Resultado = _mapper.Map<IEnumerable<CancionesDto>>(CancionessList);
                 return Ok(_response);
 
             }
@@ -48,12 +50,12 @@ namespace Pedidos_API.Controllers
             return _response;
         }
 
-        [HttpGet("GetPedidos")]
+        [HttpGet("GetCancioness")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
 
-        public async Task<ActionResult<ApiResponse>> GetPedidos(int id)
+        public async Task<ActionResult<ApiResponse>> GetCancioness(int id)
         {
             try
             {
@@ -63,14 +65,14 @@ namespace Pedidos_API.Controllers
                     _response.IsExitoso = false;
                     return BadRequest(_response);
                 }
-                var pedido = await _pedidoRepositorio.Obtener(v => v.Id == id);
+                var Canciones = await _CancionesRepositorio.Obtener(v => v.idCancion == id);
 
-                if (pedido == null)
+                if (Canciones == null)
                 {
                     _response.IsExitoso = false;
                     return NotFound(_response);
                 }
-                _response.Resultado = _mapper.Map<PedidosDto>(pedido);
+                _response.Resultado = _mapper.Map<CancionesDto>(Canciones);
                 return Ok(_response);
             }
             catch (Exception ex)
@@ -81,9 +83,8 @@ namespace Pedidos_API.Controllers
             }
             return _response;
         }
-        
         [HttpPost]
-        public async Task<IActionResult> CrearPedido(CrearPedidosDTO crearDto)
+        public async Task<IActionResult> CrearCanciones(CrearCancionesDTO crearDto)
         {
             try
             {
@@ -91,17 +92,18 @@ namespace Pedidos_API.Controllers
                 {
                     return BadRequest(ModelState);
                 }
-                var res = await _pedidoRepositorio.Obtener(v => v.Nombre.ToLower() == crearDto.Nombre.ToLower());
+                var res = await _CancionesRepositorio.Obtener(v => v.linkcopiado.ToLower() == crearDto.linkcopiado.ToLower());
                 if (res != null)
                 {
                     ModelState.AddModelError("NombreExistente", "ese producto ya existe");
                     return BadRequest(ModelState);
                 }
-                Pedidos pedi=_mapper.Map<Pedidos>(crearDto);
-                pedi.FechadeLlegada=DateTime.Now;
+                Canciones canc=_mapper.Map<Canciones>(crearDto);
+                canc.linkfiltrado = canc.linkfiltrado ;
 
-                await _pedidoRepositorio.Crear(pedi);
-                _response.Resultado= pedi;
+
+                await _CancionesRepositorio.Crear(canc);
+                _response.Resultado= canc;
                 return Ok(_response);
             }
             catch (Exception ex)
@@ -116,22 +118,22 @@ namespace Pedidos_API.Controllers
         [HttpDelete ("{id:int}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        //[ProducesResponseType(StatusCodes.Status404NotFound)]
         
-        public async Task<IActionResult> DeletePedido(int id)
+        public async Task<IActionResult> DeleteCanciones(int id)
         {
             if (id == 0)
             {
-                //_response.IsExitoso=false;
-                //_response.statusCode=HttpStatusCode.BadRequest;
+                _response.IsExitoso = false;
+                _response.statusCode = HttpStatusCode.BadRequest;
                 return BadRequest(_response);
             }
-            var pedido = await _pedidoRepositorio.Obtener(v => v.Id == id);
-            if (pedido == null)
+            var Canciones = await _CancionesRepositorio.Obtener(v => v.idCancion == id);
+            if (Canciones == null)
             {
                 return NotFound();
             }
-            await _pedidoRepositorio.Remover(pedido);
+            await _CancionesRepositorio.Remover(Canciones);
 
             return NoContent();
 
@@ -141,14 +143,14 @@ namespace Pedidos_API.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
 
 
-        public async Task<IActionResult> UpdatePedido(int id, PedidosDto pedidoDto)
+        public async Task<IActionResult> UpdateCanciones(int id, CancionesDto CancionesDto)
         {
-            if (pedidoDto == null || id != pedidoDto.Id)
+            if (CancionesDto == null || id != CancionesDto.idCancion)
             {
                 return BadRequest();
             }
-            Pedidos actual = _mapper.Map<Pedidos>(pedidoDto);
-            await _pedidoRepositorio.Modify(actual);
+            Canciones actual = _mapper.Map<Canciones>(CancionesDto);
+            await _CancionesRepositorio.Modify(actual);
             return NoContent();
         }
 
