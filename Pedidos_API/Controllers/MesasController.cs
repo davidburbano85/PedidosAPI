@@ -3,39 +3,45 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Pedidos_API.Models;
 using Pedidos_API.Models.DTO;
-using Pedidos_API.Infrastructura.Models;
 using Pedidos_API.Infrastructura.ContractsOInterfaces;
 using System.Net;
+using Pedidos_API.Infrastructura.Models;
+using System;
+using System.Linq.Expressions;
 
-namespace Pedidos_API.Controllers
+namespace Mesas_API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class PedidoController : ControllerBase
+    public class MesasController : ControllerBase
     {
-        private readonly ILogger<PedidoController> _logger;
+        private readonly ILogger<MesasController> _logger;
         private readonly IMapper _mapper;
-        private readonly IPedidoRepositorio _pedidoRepositorio;
+        private readonly IMesasRepositorio _MesasRepositorio;
         protected ApiResponse _response;
 
-        public PedidoController(ILogger<PedidoController> logger, IPedidoRepositorio pedidoRepositorio, IMapper mapper)
+        public MesasController(ILogger<MesasController> logger, IMesasRepositorio MesasRepositorio, IMapper mapper)
         {
             _mapper = mapper;
             _logger = logger;
-            _pedidoRepositorio = pedidoRepositorio;
+            _MesasRepositorio = MesasRepositorio;
             _response = new();
         }
 
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<ActionResult<ApiResponse>> GetPedidos()
+        public async Task<ActionResult<ApiResponse>> GetMesas()
         {
             try
             {
-                _logger.LogInformation("Obtener info de Pedidos");
-                IEnumerable<Pedidos> pedidosList = await _pedidoRepositorio.ObtenerTodos();
+                int idEmpresaEntrante;
+                
+                _logger.LogInformation("Obtener info de Mesas");
+                IEnumerable<Mesas> MesasList = await _MesasRepositorio.ObtenerTodos(null, x=>x.Empresa);
+               
 
-                _response.Resultado = _mapper.Map<IEnumerable<PedidosDto>>(pedidosList);
+                _response.Resultado = _mapper.Map<IEnumerable<MesasDto>>(MesasList);
+               
                 return Ok(_response);
 
             }
@@ -48,29 +54,34 @@ namespace Pedidos_API.Controllers
             return _response;
         }
 
-        [HttpGet("GetPedidos")]
+        [HttpGet("GetMesas")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
 
-        public async Task<ActionResult<ApiResponse>> GetPedidos(int id)
+        public async Task<ActionResult<ApiResponse>> GetMesas(int id)
         {
             try
             {
                 if (id == 0)
                 {
-                    _logger.LogError("Error al traer la licencia con ID: " + id);
+                    _logger.LogError("Error al traer la mesa con ID: " + id);
                     _response.IsExitoso = false;
                     return BadRequest(_response);
                 }
-                var pedido = await _pedidoRepositorio.Obtener(v => v.Id == id);
+                var tracked = true;
+                var arrays = new List<Expression<Func<Mesas, object>>>
+                {
+                    x => x.Empresa
+                };
+                var Mesa = await _MesasRepositorio.Obtener(v => v.id == id, tracked, arrays.ToArray());
 
-                if (pedido == null)
+                if (Mesa == null)
                 {
                     _response.IsExitoso = false;
                     return NotFound(_response);
                 }
-                _response.Resultado = _mapper.Map<PedidosDto>(pedido);
+                _response.Resultado = _mapper.Map<MesasDto>(Mesa);
                 return Ok(_response);
             }
             catch (Exception ex)
@@ -81,9 +92,9 @@ namespace Pedidos_API.Controllers
             }
             return _response;
         }
-        
+
         [HttpPost]
-        public async Task<IActionResult> CrearPedido(CrearPedidosDTO crearDto)
+        public async Task<IActionResult> CrearMesas(CrearMesasDTO crearDto)
         {
             try
             {
@@ -91,17 +102,17 @@ namespace Pedidos_API.Controllers
                 {
                     return BadRequest(ModelState);
                 }
-                var res = await _pedidoRepositorio.Obtener(v => v.Nombre.ToLower() == crearDto.Nombre.ToLower());
+                var res = await _MesasRepositorio.Obtener(v => v.estado.ToLower() == crearDto.estado.ToLower());
                 if (res != null)
                 {
-                    ModelState.AddModelError("NombreExistente", "ese producto ya existe");
+                    ModelState.AddModelError("NombreExistente", "esa mesa ya existe");
                     return BadRequest(ModelState);
                 }
-                Pedidos pedi=_mapper.Map<Pedidos>(crearDto);
-                pedi.FechadeLlegada=DateTime.Now;
+                Mesas pedi = _mapper.Map<Mesas>(crearDto);
+                pedi.fechaInicio = DateTime.Now;
 
-                await _pedidoRepositorio.Crear(pedi);
-                _response.Resultado= pedi;
+                await _MesasRepositorio.Crear(pedi);
+                _response.Resultado = pedi;
                 return Ok(_response);
             }
             catch (Exception ex)
@@ -113,25 +124,25 @@ namespace Pedidos_API.Controllers
             }
         }
 
-        [HttpDelete ("{id:int}")]
+        [HttpDelete("{id:int}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        
-        public async Task<IActionResult> DeletePedido(int id)
+
+        public async Task<IActionResult> DeleteMesas(int id)
         {
             if (id == 0)
             {
-                //_response.IsExitoso=false;
-                //_response.statusCode=HttpStatusCode.BadRequest;
+                _response.IsExitoso = false;
+                _response.statusCode = HttpStatusCode.BadRequest;
                 return BadRequest(_response);
             }
-            var pedido = await _pedidoRepositorio.Obtener(v => v.Id == id);
-            if (pedido == null)
+            var Mesa = await _MesasRepositorio.Obtener(v => v.id == id);
+            if (Mesa == null)
             {
                 return NotFound();
             }
-            await _pedidoRepositorio.Remover(pedido);
+            await _MesasRepositorio.Remover(Mesa);
 
             return NoContent();
 
@@ -141,14 +152,14 @@ namespace Pedidos_API.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
 
 
-        public async Task<IActionResult> UpdatePedido(int id, PedidosDto pedidoDto)
+        public async Task<IActionResult> UpdateMesas(int id, MesasDto MesasDto)
         {
-            if (pedidoDto == null || id != pedidoDto.Id)
+            if (MesasDto == null || id != MesasDto.id)
             {
                 return BadRequest();
             }
-            Pedidos actual = _mapper.Map<Pedidos>(pedidoDto);
-            await _pedidoRepositorio.Modify(actual);
+            Mesas actual = _mapper.Map<Mesas>(MesasDto);
+            await _MesasRepositorio.Modify(actual);
             return NoContent();
         }
 

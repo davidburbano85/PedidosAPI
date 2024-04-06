@@ -4,18 +4,15 @@ using Pedidos_API.Infrastructura.ModelsPOCO;
 
 namespace Pedidos_API.Infrastructura.Repositorios
 {
-    public class CancionesRepositorio : Repositorio<Canciones>, ICancionesRepositorio
+    public class UsuariosRepositorio : Repositorio<Usuarios>, IUsuariosRepositorio
     {
         private readonly ApplicationDbContext _db;
 
-        public CancionesRepositorio(ApplicationDbContext db) : base(db)
+        public UsuariosRepositorio(ApplicationDbContext db) : base(db)
         {
             _db = db;
         }
 
-        public int sumar(int a, int b)
-        {
-            return a + b;
-        }
+
     }
 }

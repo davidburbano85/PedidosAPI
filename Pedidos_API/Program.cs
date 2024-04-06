@@ -3,9 +3,11 @@ using Microsoft.Extensions.Options;
 using Pedidos_API;
 using Pedidos_API.Infrastructura.BaseRespository;
 using Pedidos_API.Infrastructura.ContractsOInterfaces;
+using Pedidos_API.Infrastructura.ModelsPOCO;
 using Pedidos_API.Infrastructura.Repositorios;
 
 var builder = WebApplication.CreateBuilder(args);
+
 
 // Add services to the container.
 
@@ -16,11 +18,13 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddAutoMapper(typeof(MappingConfig));
 
-builder.Services.AddScoped<IPedidoRepositorio, PedidoRepositorio>();
 builder.Services.AddScoped<IConsumoRepositorio, ConsumoRepositorio>();
-builder.Services.AddScoped<IPasswordRepositorio, PasswordRepositorio>();
+builder.Services.AddScoped<IUsuariosRepositorio, UsuariosRepositorio>();
 builder.Services.AddScoped<ICancionesRepositorio, CancionesRepositorio>();
-
+builder.Services.AddScoped<IEmpresaRepositorio, EmpresaRepositorio> ();
+builder.Services.AddScoped<IMesasRepositorio, MesasRepositorio> ();
+builder.Services.AddScoped<IStockRepositorio, StockRepositorio> ();
+builder.Services.AddScoped<IProductosCartaRepositorio, ProductosCartaRepositorio> ();
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {

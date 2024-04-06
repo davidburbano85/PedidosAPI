@@ -1,56 +1,42 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Pedidos_API.Infrastructura.BaseRespository;
-using Pedidos_API.Infrastructura.ContractsOInterfaces;
-using Pedidos_API.Infrastructura.ModelsPOCO;
 using Pedidos_API.Models;
 using Pedidos_API.Models.DTO;
+using Pedidos_API.Infrastructura.Models;
+using Pedidos_API.Infrastructura.ContractsOInterfaces;
 using System.Net;
 
-namespace Consumos_API.Controllers
+namespace Pedidos_API.Controllers
+
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class ConsumoController : ControllerBase
+    public class ProductosCartaController : ControllerBase
     {
-        private readonly ILogger<ConsumoController> _logger;
+        private readonly ILogger<ProductosCartaController> _logger;
         private readonly IMapper _mapper;
-        private readonly IConsumoRepositorio _ConsumoRepositorio;
+        private readonly IProductosCartaRepositorio _ProductosCartaRepositorio;
         protected ApiResponse _response;
-        private readonly ApplicationDbContext _context;     
 
-        public ConsumoController(ILogger<ConsumoController> logger, IConsumoRepositorio ConsumoRepositorio, IMapper mapper, ApplicationDbContext context)
+        public ProductosCartaController(ILogger<ProductosCartaController> logger, IProductosCartaRepositorio ProductosCartaRepositorio, IMapper mapper)
         {
             _mapper = mapper;
             _logger = logger;
-            _ConsumoRepositorio = ConsumoRepositorio;
+            _ProductosCartaRepositorio = ProductosCartaRepositorio;
             _response = new();
-            _context = context;
         }
 
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<ActionResult<ApiResponse>> GetConsumos()
+        public async Task<ActionResult<ApiResponse>> GetProductosCarta()
         {
             try
             {
+                _logger.LogInformation("Obtener info de Productos Carta");
+                IEnumerable<ProductosCarta> ProductosCartaList = await _ProductosCartaRepositorio.ObtenerTodos();
 
-                _logger.LogInformation("Obtener info de Consumos");
-
-                IEnumerable<Consumo> ConsumosList = await _ConsumoRepositorio.ObtenerTodos();
-
-                _response.Resultado = _mapper.Map<IEnumerable<ConsumoDto>>(ConsumosList);
-                // var resulta= _mapper.Map<IEnumerable<ConsumoDto>>(ConsumosList);
-
-                //_response.Resultado = resulta.Select(e => new EmpresaDto
-                //{
-                //    id=e.idProducto,
-
-                //});
-
-
-
-                //return Ok(resulta);
+                _response.Resultado = _mapper.Map<IEnumerable<ProductosCartaDto>>(ProductosCartaList);
                 return Ok(_response);
 
             }
@@ -63,29 +49,29 @@ namespace Consumos_API.Controllers
             return _response;
         }
 
-        [HttpGet("GetConsumos")]
+        [HttpGet("GetroductosCarta")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
 
-        public async Task<ActionResult<ApiResponse>> GetConsumos(int id)
+        public async Task<ActionResult<ApiResponse>> GetProductosCarta(int id)
         {
             try
             {
                 if (id == 0)
                 {
-                    _logger.LogError("Error al traer la licencia con ID: " + id);
+                    _logger.LogError("Error al traer el producto con ID: " + id);
                     _response.IsExitoso = false;
                     return BadRequest(_response);
                 }
-                var Consumo = await _ConsumoRepositorio.Obtener(v => v.id == id);
+                var pedido = await _ProductosCartaRepositorio.Obtener(v => v.id == id);
 
-                if (Consumo == null)
+                if (pedido == null)
                 {
                     _response.IsExitoso = false;
                     return NotFound(_response);
                 }
-                _response.Resultado = _mapper.Map<ConsumoDto>(Consumo);
+                _response.Resultado = _mapper.Map<ProductosCartaDto>(pedido);
                 return Ok(_response);
             }
             catch (Exception ex)
@@ -96,11 +82,9 @@ namespace Consumos_API.Controllers
             }
             return _response;
         }
+
         [HttpPost]
-
-
-
-        public async Task<IActionResult> CrearConsumo(CrearConsumoDTO crearDto)
+        public async Task<IActionResult> CrearPedido(CrearProductosCartaDTO crearDto)
         {
             try
             {
@@ -108,17 +92,17 @@ namespace Consumos_API.Controllers
                 {
                     return BadRequest(ModelState);
                 }
-                var res = await _ConsumoRepositorio.Obtener(v => v.idMesa == crearDto.idMesa);
+                var res = await _ProductosCartaRepositorio.Obtener(v => v.nombreProducto.ToLower() == crearDto.nombreProducto.ToLower());
                 if (res != null)
                 {
                     ModelState.AddModelError("NombreExistente", "ese producto ya existe");
                     return BadRequest(ModelState);
                 }
-                Consumo consu = _mapper.Map<Consumo>(crearDto);
-                consu.cantidad = consu.cantidad;
+                ProductosCarta pedi = _mapper.Map<ProductosCarta>(crearDto);
+                pedi.nombreProducto = crearDto.nombreProducto;
 
-                await _ConsumoRepositorio.Crear(consu);
-                _response.Resultado = consu;
+                await _ProductosCartaRepositorio.Crear(pedi);
+                _response.Resultado = pedi;
                 return Ok(_response);
             }
             catch (Exception ex)
@@ -135,20 +119,20 @@ namespace Consumos_API.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
 
-        public async Task<IActionResult> DeleteConsumo(int id)
+        public async Task<IActionResult> DeletePedido(int id)
         {
             if (id == 0)
             {
-                _response.IsExitoso = false;
-                _response.statusCode = HttpStatusCode.BadRequest;
+                //_response.IsExitoso=false;
+                //_response.statusCode=HttpStatusCode.BadRequest;
                 return BadRequest(_response);
             }
-            var Consumo = await _ConsumoRepositorio.Obtener(v => v.id == id);
-            if (Consumo == null)
+            var pedido = await _ProductosCartaRepositorio.Obtener(v => v.id == id);
+            if (pedido == null)
             {
                 return NotFound();
             }
-            await _ConsumoRepositorio.Remover(Consumo);
+            await _ProductosCartaRepositorio.Remover(pedido);
 
             return NoContent();
 
@@ -158,14 +142,14 @@ namespace Consumos_API.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
 
 
-        public async Task<IActionResult> UpdateConsumo(int id, ConsumoDto ConsumoDto)
+        public async Task<IActionResult> UpdatePedido(int id, ProductosCarta ProductosCartaDto)
         {
-            if (ConsumoDto == null || id != ConsumoDto.id)
+            if (ProductosCartaDto == null || id != ProductosCartaDto.id)
             {
                 return BadRequest();
             }
-            Consumo actual = _mapper.Map<Consumo>(ConsumoDto);
-            await _ConsumoRepositorio.Modify(actual);
+            ProductosCarta actual = _mapper.Map<ProductosCarta>(ProductosCartaDto);
+            await _ProductosCartaRepositorio.Modify(actual);
             return NoContent();
         }
 

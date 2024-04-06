@@ -5,6 +5,7 @@
 
 using Microsoft.EntityFrameworkCore;
 using Pedidos_API.Infrastructura.ContractsOInterfaces;
+using System;
 using System.Linq.Expressions;
 
 namespace Pedidos_API.Infrastructura.BaseRespository
@@ -19,6 +20,7 @@ namespace Pedidos_API.Infrastructura.BaseRespository
         {
             _db = db;
             dbset = _db.Set<T>();
+            //var loquesea = Activator.CreateInstance(typeof(T));
         }
 
         #region CRUD GENERICO
@@ -27,7 +29,7 @@ namespace Pedidos_API.Infrastructura.BaseRespository
             await dbset.AddAsync(entidad);
             await Grabar();
         }
-      
+
         public async Task Modify(T entidad)
         {
             dbset.Update(entidad);
@@ -41,7 +43,7 @@ namespace Pedidos_API.Infrastructura.BaseRespository
         }
        
 
-        public async Task<T> Obtener(Expression<Func<T, bool>>? filtro = null, bool tracked = true)
+        public async Task<T> Obtener(Expression<Func<T, bool>>? filtro = null, bool tracked = true, params Expression<Func<T, object>>[] includes)
         {
             IQueryable<T> query = dbset;
             if (!tracked)
@@ -52,20 +54,30 @@ namespace Pedidos_API.Infrastructura.BaseRespository
             {
                 query = query.Where(filtro);
             }
+            if (includes.Any())
+            {
+                foreach (var navProperty in includes)
+                    query = query.Include(navProperty);
+
+            }
             return await query.FirstOrDefaultAsync();
         }
 
-        public async Task<List<T>> ObtenerTodos(Expression<Func<T, bool>>? filtro = null)
+        public async Task<List<T>> ObtenerTodos(Expression<Func<T, bool>>? filtro = null, params Expression<Func<T, object>>[] includes)
         {
             IQueryable<T> query = dbset;
             if (filtro != null)
             {
                 query = query.Where(filtro);
             }
+            if (includes.Any())
+            {
+                foreach (var navProperty in includes)
+                    query = query.Include(navProperty);
 
+            }
             return await query.ToListAsync();
         }
-
       
         #endregion
 

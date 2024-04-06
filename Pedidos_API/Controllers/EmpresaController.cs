@@ -1,43 +1,55 @@
 ﻿using AutoMapper;
-
 using Microsoft.AspNetCore.Mvc;
 
-
+using System.Net;
 using Pedidos_API.Infrastructura.ContractsOInterfaces;
 using Pedidos_API.Models;
+using Pedidos_API.Infrastructura.Models;
 using Pedidos_API.Models.DTO;
-using Pedidos_API.Infrastructura.ModelsPOCO;
+using Pedidos_API.Infrastructura.BaseRespository;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Query;
 
-namespace Password_API.Controllers
+namespace Empresa_API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class PasswordController : ControllerBase
+    public class EmpresaController : ControllerBase
     {
-        private readonly ILogger<PasswordController> _logger;
+        private readonly ILogger<EmpresaController> _logger;
         private readonly IMapper _mapper;
-        private readonly IPasswordRepositorio _PasswordRepositorio;
+        private readonly IEmpresaRepositorio _EmpresaRepositorio;
+        private readonly ApplicationDbContext _context;
         protected ApiResponse _response;
 
-        public PasswordController(ILogger<PasswordController> logger, IPasswordRepositorio PasswordRepositorio, IMapper mapper)
+        public EmpresaController(ILogger<EmpresaController> logger, IEmpresaRepositorio EmpresaRepositorio, IMapper mapper, ApplicationDbContext context)
         {
             _mapper = mapper;
             _logger = logger;
-            _PasswordRepositorio = PasswordRepositorio;
+            _EmpresaRepositorio = EmpresaRepositorio;
             _response = new();
+            _context = context;
+
         }
 
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<ActionResult<ApiResponse>> GetPasswords()
+        public async Task<ActionResult<ApiResponse>> GetEmpresa()
         {
             try
             {
-                _logger.LogInformation("Obtener info de Passwords");
-                IEnumerable<Password> PasswordsList = await _PasswordRepositorio.ObtenerTodos();
+                _logger.LogInformation("Obtener info de Empresa");
+                IEnumerable<Empresa> EmpresaList = await _EmpresaRepositorio.ObtenerTodos();
 
-                _response.Resultado = _mapper.Map<IEnumerable<PasswordDto>>(PasswordsList);
+
+
+
+                _response.Resultado = _mapper.Map<IEnumerable<EmpresaDto>>(EmpresaList);
+
+
+
                 return Ok(_response);
+                //var EmpresaList = await _EmpresaRepositorio.ObtenerTodos();
 
             }
             catch (Exception ex)
@@ -49,12 +61,12 @@ namespace Password_API.Controllers
             return _response;
         }
 
-        [HttpGet("GetPasswords")]
+        [HttpGet("GetEmpresa")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
 
-        public async Task<ActionResult<ApiResponse>> GetPasswords(int id)
+        public async Task<ActionResult<ApiResponse>> GetEmpresa(int id)
         {
             try
             {
@@ -64,14 +76,14 @@ namespace Password_API.Controllers
                     _response.IsExitoso = false;
                     return BadRequest(_response);
                 }
-                var Password = await _PasswordRepositorio.Obtener(v => v.IdPass == id);
+                var Empresa = await _EmpresaRepositorio.Obtener(v => v.id == id);
 
-                if (Password == null)
+                if (Empresa == null)
                 {
                     _response.IsExitoso = false;
                     return NotFound(_response);
                 }
-                _response.Resultado = _mapper.Map<PasswordDto>(Password);
+                _response.Resultado = _mapper.Map<EmpresaDto>(Empresa);
                 return Ok(_response);
             }
             catch (Exception ex)
@@ -82,8 +94,9 @@ namespace Password_API.Controllers
             }
             return _response;
         }
+
         [HttpPost]
-        public async Task<IActionResult> CrearPassword(CrearPasswordDTO crearDto)
+        public async Task<IActionResult> CrearEmpresa(CrearEmpresaDTO crearDto)
         {
             try
             {
@@ -91,17 +104,17 @@ namespace Password_API.Controllers
                 {
                     return BadRequest(ModelState);
                 }
-                var res = await _PasswordRepositorio.Obtener(v => v.Nombre.ToLower() == crearDto.Nombre.ToLower());
+                var res = await _EmpresaRepositorio.Obtener(v => v.nombreEstablecimiento.ToLower() == crearDto.nombreEstablecimiento.ToLower());
                 if (res != null)
                 {
                     ModelState.AddModelError("NombreExistente", "ese producto ya existe");
                     return BadRequest(ModelState);
                 }
-                Password pas=_mapper.Map<Password>(crearDto);
-                pas.Pass="";
+                Empresa pedi = _mapper.Map<Empresa>(crearDto);
+                pedi.fechaSuscripcion = DateTime.Now;
 
-                await _PasswordRepositorio.Crear(pas);
-                _response.Resultado= pas;
+                await _EmpresaRepositorio.Crear(pedi);
+                _response.Resultado = pedi;
                 return Ok(_response);
             }
             catch (Exception ex)
@@ -113,25 +126,25 @@ namespace Password_API.Controllers
             }
         }
 
-        [HttpDelete ("{id:int}")]
+        [HttpDelete("{id:int}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        
-        public async Task<IActionResult> DeletePassword(int id)
+
+        public async Task<IActionResult> DeleteEmpresa(int id)
         {
             if (id == 0)
             {
-                //_response.IsExitoso=false;
-                //_response.statusCode=HttpStatusCode.BadRequest;
+                _response.IsExitoso = false;
+                _response.statusCode = HttpStatusCode.BadRequest;
                 return BadRequest(_response);
             }
-            var Password = await _PasswordRepositorio.Obtener(v => v.IdPass == id);
-            if (Password == null)
+            var Empresa = await _EmpresaRepositorio.Obtener(v => v.id == id);
+            if (Empresa == null)
             {
                 return NotFound();
             }
-            await _PasswordRepositorio.Remover(Password);
+            await _EmpresaRepositorio.Remover(Empresa);
 
             return NoContent();
 
@@ -141,14 +154,14 @@ namespace Password_API.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
 
 
-        public async Task<IActionResult> UpdatePassword(int id, PasswordDto PasswordDto)
+        public async Task<IActionResult> UpdateEmpresa(int id, EmpresaDto EmpresaDto)
         {
-            if (PasswordDto == null || id != PasswordDto.IdPass)
+            if (EmpresaDto == null || id != EmpresaDto.id)
             {
                 return BadRequest();
             }
-            Password actual = _mapper.Map<Password>(PasswordDto);
-            await _PasswordRepositorio.Modify(actual);
+            Empresa actual = _mapper.Map<Empresa>(EmpresaDto);
+            await _EmpresaRepositorio.Modify(actual);
             return NoContent();
         }
 

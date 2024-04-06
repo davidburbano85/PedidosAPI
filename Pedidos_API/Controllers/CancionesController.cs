@@ -8,6 +8,7 @@ using Pedidos_API.Models;
 using Pedidos_API.Models.DTO;
 using Pedidos_API.Infrastructura.ModelsPOCO;
 using System.Net;
+using Pedidos_API.Infrastructura.Repositorios;
 
 namespace Canciones_API.Controllers
 {
@@ -35,7 +36,7 @@ namespace Canciones_API.Controllers
             try
             {
                 _logger.LogInformation("Obtener info de Cancioness");
-                IEnumerable<Canciones> CancionessList = await _CancionesRepositorio.ObtenerTodos();
+                IEnumerable<Canciones> CancionessList = await _CancionesRepositorio.ObtenerTodos(null, x=> x.Empresa);
 
                 _response.Resultado = _mapper.Map<IEnumerable<CancionesDto>>(CancionessList);
                 return Ok(_response);
@@ -65,7 +66,7 @@ namespace Canciones_API.Controllers
                     _response.IsExitoso = false;
                     return BadRequest(_response);
                 }
-                var Canciones = await _CancionesRepositorio.Obtener(v => v.idCancion == id);
+                var Canciones = await _CancionesRepositorio.Obtener(v => v.id == id);
 
                 if (Canciones == null)
                 {
@@ -95,15 +96,15 @@ namespace Canciones_API.Controllers
                 var res = await _CancionesRepositorio.Obtener(v => v.linkcopiado.ToLower() == crearDto.linkcopiado.ToLower());
                 if (res != null)
                 {
-                    ModelState.AddModelError("NombreExistente", "ese producto ya existe");
+                    ModelState.AddModelError("NombreExistente", "esta cancion ya existe");
                     return BadRequest(ModelState);
                 }
-                Canciones canc=_mapper.Map<Canciones>(crearDto);
-                canc.linkfiltrado = canc.linkfiltrado ;
+                Canciones canc = _mapper.Map<Canciones>(crearDto);
+                canc.nombreCancion = canc.nombreCancion;
 
 
                 await _CancionesRepositorio.Crear(canc);
-                _response.Resultado= canc;
+                _response.Resultado = canc;
                 return Ok(_response);
             }
             catch (Exception ex)
@@ -115,11 +116,11 @@ namespace Canciones_API.Controllers
             }
         }
 
-        [HttpDelete ("{id:int}")]
+        [HttpDelete("{id:int}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         //[ProducesResponseType(StatusCodes.Status404NotFound)]
-        
+
         public async Task<IActionResult> DeleteCanciones(int id)
         {
             if (id == 0)
@@ -128,7 +129,7 @@ namespace Canciones_API.Controllers
                 _response.statusCode = HttpStatusCode.BadRequest;
                 return BadRequest(_response);
             }
-            var Canciones = await _CancionesRepositorio.Obtener(v => v.idCancion == id);
+            var Canciones = await _CancionesRepositorio.Obtener(v => v.id == id);
             if (Canciones == null)
             {
                 return NotFound();
@@ -145,7 +146,7 @@ namespace Canciones_API.Controllers
 
         public async Task<IActionResult> UpdateCanciones(int id, CancionesDto CancionesDto)
         {
-            if (CancionesDto == null || id != CancionesDto.idCancion)
+            if (CancionesDto == null || id != CancionesDto.id)
             {
                 return BadRequest();
             }
