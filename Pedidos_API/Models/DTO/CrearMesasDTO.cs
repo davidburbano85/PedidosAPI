@@ -1,12 +1,12 @@
 ﻿using Pedidos_API.Infrastructura.Models;
+using Pedidos_API.Infrastructura.ModelsPOCO;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Pedidos_API.Models.DTO
 {
-    public class CrearCancionesDTO
+    public class CrearMesasDTO
     {
-
         [Key]
 
         public int id { get; set; }
@@ -14,15 +14,16 @@ namespace Pedidos_API.Models.DTO
         [ForeignKey("Empresa")]
 
         public int idEmpresa { get; set; }
-        [Required]
-        [ForeignKey("Mesas")]
+        public int numeroMesa { get; set; }
+        public int sillas { get; set; }
+        public string? estado { get; set; }
+        public DateTime fechaInicio { get; set; }
+        public DateTime fechaFinalizacion { get; set; }
 
-        public int idMesa { get; set; }  
 
-        public string? linkcopiado { get; set; }
-        public string? nombreCancion { get; set; }
 
-       
+     
+
 
     }
 }

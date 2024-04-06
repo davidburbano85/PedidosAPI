@@ -2,7 +2,7 @@
 
 namespace Pedidos_API.Infrastructura.ContractsOInterfaces
 {
-    public interface IPedidoRepositorio : IRepositorio<Pedidos>
+    public interface IEmpresaRepositorio : IRepositorio<Empresa>
     {
 
     }

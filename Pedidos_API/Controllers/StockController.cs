@@ -6,36 +6,41 @@ using Pedidos_API.Models.DTO;
 using Pedidos_API.Infrastructura.Models;
 using Pedidos_API.Infrastructura.ContractsOInterfaces;
 using System.Net;
+using System.Linq.Expressions;
 
 namespace Pedidos_API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class PedidoController : ControllerBase
+    public class StockController : ControllerBase
     {
-        private readonly ILogger<PedidoController> _logger;
+        private readonly ILogger<StockController> _logger;
         private readonly IMapper _mapper;
-        private readonly IPedidoRepositorio _pedidoRepositorio;
+        private readonly IStockRepositorio _StockRepositorio;
         protected ApiResponse _response;
 
-        public PedidoController(ILogger<PedidoController> logger, IPedidoRepositorio pedidoRepositorio, IMapper mapper)
+        public StockController(ILogger<StockController> logger, IStockRepositorio StockRepositorio, IMapper mapper)
         {
             _mapper = mapper;
             _logger = logger;
-            _pedidoRepositorio = pedidoRepositorio;
+            _StockRepositorio = StockRepositorio;
             _response = new();
         }
 
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<ActionResult<ApiResponse>> GetPedidos()
+        public async Task<ActionResult<ApiResponse>> GetStock()
         {
             try
             {
-                _logger.LogInformation("Obtener info de Pedidos");
-                IEnumerable<Pedidos> pedidosList = await _pedidoRepositorio.ObtenerTodos();
+                _logger.LogInformation("Obtener info de Productos Carta");
+                var arrayStock=new List<Expression<Func<Stock, object>>>()
+                {
+                    e=>e.Empresa
+                };
+                IEnumerable<Stock> StockList = await _StockRepositorio.ObtenerTodos(null, arrayStock.ToArray());
 
-                _response.Resultado = _mapper.Map<IEnumerable<PedidosDto>>(pedidosList);
+                _response.Resultado = _mapper.Map<IEnumerable<StockDto>>(StockList);
                 return Ok(_response);
 
             }
@@ -48,29 +53,33 @@ namespace Pedidos_API.Controllers
             return _response;
         }
 
-        [HttpGet("GetPedidos")]
+        [HttpGet("GetroductosCarta")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
 
-        public async Task<ActionResult<ApiResponse>> GetPedidos(int id)
+        public async Task<ActionResult<ApiResponse>> GetStock(int id)
         {
             try
             {
                 if (id == 0)
                 {
-                    _logger.LogError("Error al traer la licencia con ID: " + id);
+                    _logger.LogError("Error al traer el producto con ID: " + id);
                     _response.IsExitoso = false;
                     return BadRequest(_response);
                 }
-                var pedido = await _pedidoRepositorio.Obtener(v => v.Id == id);
+                var arrayStock = new List<Expression<Func<Stock, object>>>()
+                {
+                    e=>e.Empresa
+                };
+                var pedido = await _StockRepositorio.Obtener(v => v.id == id, true, arrayStock.ToArray());
 
                 if (pedido == null)
                 {
                     _response.IsExitoso = false;
                     return NotFound(_response);
                 }
-                _response.Resultado = _mapper.Map<PedidosDto>(pedido);
+                _response.Resultado = _mapper.Map<StockDto>(pedido);
                 return Ok(_response);
             }
             catch (Exception ex)
@@ -81,9 +90,9 @@ namespace Pedidos_API.Controllers
             }
             return _response;
         }
-        
+
         [HttpPost]
-        public async Task<IActionResult> CrearPedido(CrearPedidosDTO crearDto)
+        public async Task<IActionResult> CrearPedido(CrearStockDTO crearDto)
         {
             try
             {
@@ -91,17 +100,17 @@ namespace Pedidos_API.Controllers
                 {
                     return BadRequest(ModelState);
                 }
-                var res = await _pedidoRepositorio.Obtener(v => v.Nombre.ToLower() == crearDto.Nombre.ToLower());
+                var res = await _StockRepositorio.Obtener(v => v.tipoProducto.ToLower() == crearDto.tipoProducto.ToLower());
                 if (res != null)
                 {
                     ModelState.AddModelError("NombreExistente", "ese producto ya existe");
                     return BadRequest(ModelState);
                 }
-                Pedidos pedi=_mapper.Map<Pedidos>(crearDto);
-                pedi.FechadeLlegada=DateTime.Now;
+                Stock pedi = _mapper.Map<Stock>(crearDto);
+                pedi.tipoProducto = crearDto.tipoProducto;
 
-                await _pedidoRepositorio.Crear(pedi);
-                _response.Resultado= pedi;
+                await _StockRepositorio.Crear(pedi);
+                _response.Resultado = pedi;
                 return Ok(_response);
             }
             catch (Exception ex)
@@ -113,11 +122,11 @@ namespace Pedidos_API.Controllers
             }
         }
 
-        [HttpDelete ("{id:int}")]
+        [HttpDelete("{id:int}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        
+
         public async Task<IActionResult> DeletePedido(int id)
         {
             if (id == 0)
@@ -126,12 +135,12 @@ namespace Pedidos_API.Controllers
                 //_response.statusCode=HttpStatusCode.BadRequest;
                 return BadRequest(_response);
             }
-            var pedido = await _pedidoRepositorio.Obtener(v => v.Id == id);
+            var pedido = await _StockRepositorio.Obtener(v => v.id == id);
             if (pedido == null)
             {
                 return NotFound();
             }
-            await _pedidoRepositorio.Remover(pedido);
+            await _StockRepositorio.Remover(pedido);
 
             return NoContent();
 
@@ -141,14 +150,14 @@ namespace Pedidos_API.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
 
 
-        public async Task<IActionResult> UpdatePedido(int id, PedidosDto pedidoDto)
+        public async Task<IActionResult> UpdatePedido(int id, Stock StockDto)
         {
-            if (pedidoDto == null || id != pedidoDto.Id)
+            if (StockDto == null || id != StockDto.id)
             {
                 return BadRequest();
             }
-            Pedidos actual = _mapper.Map<Pedidos>(pedidoDto);
-            await _pedidoRepositorio.Modify(actual);
+            Stock actual = _mapper.Map<Stock>(StockDto);
+            await _StockRepositorio.Modify(actual);
             return NoContent();
         }
 

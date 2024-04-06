@@ -4,11 +4,11 @@ using Pedidos_API.Infrastructura.Models;
 
 namespace Pedidos_API.Infrastructura.Repositorios
 {
-    public class PedidoRepositorio : Repositorio<Pedidos>, IPedidoRepositorio
+    public class StockRepositorio : Repositorio<Stock>, IStockRepositorio
     {
         private readonly ApplicationDbContext _db;
 
-        public PedidoRepositorio(ApplicationDbContext db) : base(db)
+        public StockRepositorio(ApplicationDbContext db) : base(db)
         {
             _db = db;
         }

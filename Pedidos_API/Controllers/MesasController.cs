@@ -1,53 +1,47 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Pedidos_API.Infrastructura.BaseRespository;
-using Pedidos_API.Infrastructura.ContractsOInterfaces;
-using Pedidos_API.Infrastructura.ModelsPOCO;
 using Pedidos_API.Models;
 using Pedidos_API.Models.DTO;
-using System.Linq.Expressions;
+using Pedidos_API.Infrastructura.ContractsOInterfaces;
 using System.Net;
+using Pedidos_API.Infrastructura.Models;
+using System;
+using System.Linq.Expressions;
 
-namespace Consumos_API.Controllers
+namespace Mesas_API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class ConsumoController : ControllerBase
+    public class MesasController : ControllerBase
     {
-        private readonly ILogger<ConsumoController> _logger;
+        private readonly ILogger<MesasController> _logger;
         private readonly IMapper _mapper;
-        private readonly IConsumoRepositorio _ConsumoRepositorio;
+        private readonly IMesasRepositorio _MesasRepositorio;
         protected ApiResponse _response;
-        private readonly ApplicationDbContext _context;     
 
-        public ConsumoController(ILogger<ConsumoController> logger, IConsumoRepositorio ConsumoRepositorio, IMapper mapper, ApplicationDbContext context)
+        public MesasController(ILogger<MesasController> logger, IMesasRepositorio MesasRepositorio, IMapper mapper)
         {
             _mapper = mapper;
             _logger = logger;
-            _ConsumoRepositorio = ConsumoRepositorio;
+            _MesasRepositorio = MesasRepositorio;
             _response = new();
-            _context = context;
         }
 
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<ActionResult<ApiResponse>> GetConsumos()
+        public async Task<ActionResult<ApiResponse>> GetMesas()
         {
             try
             {
+                
 
-                _logger.LogInformation("Obtener info de Consumos");
-                var arrayConsumos = new List<Expression<Func<Consumo, object>>>
-                {
-                    e=>e.Empresa,
-                    m=>m.Mesas,
-                    p=>p.ProductosCarta
-                };
+                _logger.LogInformation("Obtener info de Mesas");
+                IEnumerable<Mesas> MesasList = await _MesasRepositorio.ObtenerTodos(null, x => x.Empresa);
 
-                IEnumerable<Consumo> ConsumosList = await _ConsumoRepositorio.ObtenerTodos(null, arrayConsumos.ToArray());
 
-                _response.Resultado = _mapper.Map<IEnumerable<ConsumoDto>>(ConsumosList);
-            
+                _response.Resultado = _mapper.Map<IEnumerable<MesasDto>>(MesasList);
+
                 return Ok(_response);
 
             }
@@ -60,36 +54,34 @@ namespace Consumos_API.Controllers
             return _response;
         }
 
-        [HttpGet("GetConsumos")]
+        [HttpGet("GetMesas")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
 
-        public async Task<ActionResult<ApiResponse>> GetConsumos(int id)
+        public async Task<ActionResult<ApiResponse>> GetMesas(int id)
         {
             try
             {
                 if (id == 0)
                 {
-                    _logger.LogError("Error al traer la licencia con ID: " + id);
+                    _logger.LogError("Error al traer la mesa con ID: " + id);
                     _response.IsExitoso = false;
                     return BadRequest(_response);
                 }
-                var arrayConsumos = new List<Expression<Func<Consumo, object>>>
+                var tracked = true;
+                var arrays = new List<Expression<Func<Mesas, object>>>
                 {
-                    e=>e.Empresa,
-                    m=>m.Mesas,
-                    p=>p.ProductosCarta,
-                 
+                    x => x.Empresa,
                 };
-                var Consumo = await _ConsumoRepositorio.Obtener(v => v.id == id, true, arrayConsumos.ToArray());
+                var Mesa = await _MesasRepositorio.Obtener(v => v.id == id, true, arrays.ToArray());
 
-                if (Consumo == null)
+                if (Mesa == null)
                 {
                     _response.IsExitoso = false;
                     return NotFound(_response);
                 }
-                _response.Resultado = _mapper.Map<ConsumoDto>(Consumo);
+                _response.Resultado = _mapper.Map<MesasDto>(Mesa);
                 return Ok(_response);
             }
             catch (Exception ex)
@@ -100,11 +92,9 @@ namespace Consumos_API.Controllers
             }
             return _response;
         }
+
         [HttpPost]
-
-
-
-        public async Task<IActionResult> CrearConsumo(CrearConsumoDTO crearDto)
+        public async Task<IActionResult> CrearMesas(CrearMesasDTO crearDto)
         {
             try
             {
@@ -112,17 +102,22 @@ namespace Consumos_API.Controllers
                 {
                     return BadRequest(ModelState);
                 }
-                var res = await _ConsumoRepositorio.Obtener(v => v.idMesa == crearDto.idMesa);
+                //var arrayCrearEmpresa = new List<Expression<Func<Mesas, object>>>
+                //{
+                //    m=> m.Empresa
+
+                //};
+                var res = await _MesasRepositorio.Obtener(v => v.estado.ToLower() == crearDto.estado.ToLower());
                 if (res != null)
                 {
-                    ModelState.AddModelError("NombreExistente", "ese producto ya existe");
+                    ModelState.AddModelError("NombreExistente", "esa mesa ya existe");
                     return BadRequest(ModelState);
                 }
-                Consumo consu = _mapper.Map<Consumo>(crearDto);
-                consu.cantidad = consu.cantidad;
+                Mesas pedi = _mapper.Map<Mesas>(crearDto);
+                pedi.fechaInicio = DateTime.Now;
 
-                await _ConsumoRepositorio.Crear(consu);
-                _response.Resultado = consu;
+                await _MesasRepositorio.Crear(pedi);
+                _response.Resultado = pedi;
                 return Ok(_response);
             }
             catch (Exception ex)
@@ -139,7 +134,7 @@ namespace Consumos_API.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
 
-        public async Task<IActionResult> DeleteConsumo(int id)
+        public async Task<IActionResult> DeleteMesas(int id)
         {
             if (id == 0)
             {
@@ -147,12 +142,12 @@ namespace Consumos_API.Controllers
                 _response.statusCode = HttpStatusCode.BadRequest;
                 return BadRequest(_response);
             }
-            var Consumo = await _ConsumoRepositorio.Obtener(v => v.id == id);
-            if (Consumo == null)
+            var Mesa = await _MesasRepositorio.Obtener(v => v.id == id);
+            if (Mesa == null)
             {
                 return NotFound();
             }
-            await _ConsumoRepositorio.Remover(Consumo);
+            await _MesasRepositorio.Remover(Mesa);
 
             return NoContent();
 
@@ -162,14 +157,20 @@ namespace Consumos_API.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
 
 
-        public async Task<IActionResult> UpdateConsumo(int id, ConsumoDto ConsumoDto)
+        public async Task<IActionResult> UpdateMesas(int id, MesasDto MesasDto)
         {
-            if (ConsumoDto == null || id != ConsumoDto.id)
+            if (MesasDto == null || id != MesasDto.id)
             {
                 return BadRequest();
             }
-            Consumo actual = _mapper.Map<Consumo>(ConsumoDto);
-            await _ConsumoRepositorio.Modify(actual);
+            var arrayPut = new List<Expression<Func<Mesas, object>>>
+            {
+                x=>x.Empresa
+            };
+        
+
+            Mesas actual = _mapper.Map<Mesas>(MesasDto);
+            await _MesasRepositorio.Modify(actual, arrayPut.ToArray());
             return NoContent();
         }
 

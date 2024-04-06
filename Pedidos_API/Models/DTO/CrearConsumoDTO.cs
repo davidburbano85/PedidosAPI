@@ -1,19 +1,29 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Pedidos_API.Models.DTO
 {
     public class CrearConsumoDTO
     {
 
-        //[Required]
-        //[MaxLength(100)]
-        //[Key]
-               
-        public string? Mesa { get; set; }
-        [Required]
-        public string Producto { get; set; }
+        [Key]
 
-        public int Cantidad { get; set; }
+        public int id { get; set; }
+        [Required]
+        [ForeignKey("Empresa")]
+        public int idEmpresa { get; set; }
+        [Required]
+        [ForeignKey("Mesas")]
+
+        public int idMesa { get; set; }
+        [Required]
+        [ForeignKey("ProctosCarta")]
+
+        public int idProducto { get; set; }
+
+        public int cantidad { get; set; }
+        public bool atencionMesero { get; set; }
+        public DateTime fechaDeVenta { get; set; }
 
     }
 }
